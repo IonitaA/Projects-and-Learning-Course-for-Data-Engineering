@@ -199,7 +199,7 @@ def process_dataframe_for_M_rows(df_m, directory_FNAV_m):
     list_of_ficdec_series =["24AH", "24AI", "24AP", "24HV", "24VI", "24PL", "23HV", "23VI", "23PL","23AH", "23AI", "23AP", "CORS", "AMES", "PRES", "RPXX", "RPXI", "RPPL","RPAH", "RPAI", "RPAP", "CM23", "CI23", "PS23", "DQ23", "QA23", "QS23","2050", "OPEL", "OPEN", "OPER", "OPPN", "OPPR", "OPES", "OPEU", "OPER","OVBH", "OVBI", "INSH", "INSI", "INSA", "OVAV", "CHNB", "CHTE", "CHAU","CHSU", "CHVU", "CPAU", "MALB", "MERB", "MERM", "MESU", "RUSV", "KALB","TURM", "IDAU", "IDAI", "IDVH", "IDVI", "IDNH", "IDNI", "FCAV", "FJHV","FJVI", "BPBR", "BPUS", "ACIK", "ACMK", "ACCS", "ACPS", "ACHV", "TRKA","RUSA", "AIND", "AINC", "PKIN", "PMKO", "PRMK", "FORW", "PNEU", "PNES","PNEE", "PNEW", "PNEH", "FILI", "EUI2", "EURI", "EURB", "EURC", "EURU","EURP", "EURT", "ERT2", "EURA", "EURD", "ERMQ", "GLIC", "BOLK", "IAMK","IAMX", "IAMY", "MBPR", "TOLH", "TOLI", "TEXT", "PPWT", "PNRS", "BATS","BATT", "REPA", "OUTI", "OUSP", "GMST", "P1ST", "P1SI", "P1SP", "P1SA","K9ST", "K9SI", "K9SP", "K9SA", "K9OH", "K9OI", "K0ST", "K0ME", "X2ME","B3PS", "B0ST", "BOLO"]
 
 
-    num_columns = len(df_m.columns) - 1  # obținem indexul ultimei coloane
+    num_columns = len(df_m.columns) - 1  # we obtain the index of the last column.
     last_digit_for_year = str(datetime.datetime.now().year)[-2:]
 
 
@@ -209,18 +209,18 @@ def process_dataframe_for_M_rows(df_m, directory_FNAV_m):
             cell_df_m = df_m.iloc[i, j]
             cell_excel_SQ00 = excel_SQ00.iloc[i, j]
 
-            # nu se modifica elementele din coloana date_ac/date_ap 
+            # the elements in the 'date_ac'/'date_ap' columns are not modified
             if j == 10 or j == 11:
                 if cell_excel_SQ00 == '' and cell_df_m != '' and cell_df_m != '00000000':
                     excel_SQ00.iloc[i, j] = df_m.iloc[i, j]
                 continue
      
-            # Verificăm dacă celula conține "#"
+            # We check if the cell contains '#'
             if "#" in str(cell_df_m):
                 excel_SQ00.iloc[i, j] = ""
 
             elif j == 47:
-                # regula 3
+                # the rule 3
                 if cell_df_m == "2100":
                     #DATE_AC
                     if df_m.iloc[i, 10] != '':
@@ -240,32 +240,32 @@ def process_dataframe_for_M_rows(df_m, directory_FNAV_m):
                     #ADD NEW FICTEC
                     excel_SQ00.iloc[i, j]  = '0000'
 
-                #aici cell_df_m != "23*"
-                # regula ficdec diferit de forma "ultimele doua cifere din an + HV"
+                # cell_df_m != "23*"
+                # The rule is different from the pattern 'last two digits of the year + HV
 
                 elif last_digit_for_year in cell_df_m[:2] or cell_df_m in list_of_ficdec_series:
-                    #coloana DATA_AC
+                    # column DATA_AC
                     if df_m.iloc[i, 10] != '' and df_m.iloc[i, 10] != '00000000':
                         excel_SQ00.iloc[i, 10] = df_m.iloc[i, 10]
-                    #coloana DATA_AP
+                    # column DATA_AP
                     if df_m.iloc[i, 11] != '' and df_m.iloc[i, 11] != '00000000':
                         excel_SQ00.iloc[i, 11] = df_m.iloc[i, 11]
 
                     excel_SQ00.iloc[i, j]  = df_m.iloc[i, j]
 
-                #Adaugarea noului ficdec in cazul in care acesta exista in export si este diferit de cel curent
+                # adding the new ficdec if it exists in the export and is different from the current one
                 elif cell_excel_SQ00 != cell_df_m and cell_df_m != '':
                     excel_SQ00.iloc[i, j] = cell_df_m
 
 
-            # eliminarea observatiilor curente si punerea de observatii noi (care este localizata pe ultima coloana)
+            # removing current observations and adding new observations (which are located in the last column
             elif j == num_columns:  # verificăm dacă suntem pe ultima coloană
                 if  cell_excel_SQ00 == cell_df_m or cell_df_m == '':
                     excel_SQ00.iloc[i, j] = ""
                 elif cell_excel_SQ00 != cell_df_m and cell_df_m != '':
                     excel_SQ00.iloc[i, j] = cell_df_m
 
-            # Punerea informatilor in excel daca nu sunt reguli de tratat pentru acest set de celule
+            # putting the information in Excel if there are no rules to be applied for this set of cells.
             elif cell_excel_SQ00 != cell_df_m and cell_df_m != '':
                 excel_SQ00.iloc[i, j] = cell_df_m
            
@@ -367,9 +367,6 @@ def main():
        
     df_result = df_result.sort_values(by=4, ascending=True)
     df_result = df_result.reset_index(drop=True)
-
-    #m_rows.to_csv("m_rows.txt", sep=';', header=False, index=False)
-    #df_result.to_csv("df_result.txt", sep=';', header=False, index=False)
 
 
     sap_gui.root_to_create_FM()
