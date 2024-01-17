@@ -4,7 +4,7 @@
 The code aims to take a 'json' file, split it into smaller files with an exact number of lines, and then send the information to pgAdmin in parallel.
 
 ## Architecture 
-<img src="architecture.jpeg">
+<img src="arhitecture.jpeg">
 
 ## Technology Used
 - Programming Language - Python
