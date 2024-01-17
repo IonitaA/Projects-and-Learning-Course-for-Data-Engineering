@@ -35,7 +35,7 @@ More info about dataset can be found here:
 <img src="Data/data_model.jpeg">
 
 ## Looker Dashboard
-<img src="Data/Looker_Uber_Dashboard.jpeg">
+<img src="Mage-Files/Looker_Uber_Dashboard.jpeg">
 
 
 ## Complete Video Tutorial 
