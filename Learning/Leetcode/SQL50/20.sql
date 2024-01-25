@@ -1,5 +1,5 @@
 CREATE TABLE Transactions (
-    id INT,
+    id INT PRIMARY KEY,
     country VARCHAR(255),
     state VARCHAR(255),
     amount DECIMAL(10, 2),
