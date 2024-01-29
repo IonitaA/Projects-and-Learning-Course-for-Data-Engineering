@@ -24,4 +24,4 @@ round(avg(age))  as average_age
 from Employees w1
 where reports_to  is not null
 group by reports_to 
-order by 1 
+order by 1   
