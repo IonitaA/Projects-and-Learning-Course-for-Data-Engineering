@@ -1,0 +1,777 @@
+Sub import_procedure_output()
+
+    Dim FilePath As String
+    
+    Dim wb_Import As Workbook
+    Dim ws_Import As Worksheet
+    Dim Import_LastColumn As Long
+    Dim Import_LastRow As Long
+    Dim Import_Array() As Variant
+    
+    Dim ws_Total As Worksheet
+    Dim Total_LastRow As Long
+    Dim Total_Array() As Variant
+    Dim total_Index As Long
+    
+    Dim ws_Query_1 As Worksheet
+    Dim Query_1_LastRow As Long
+    Dim Query1_Array() As Variant
+    Dim query1_Index As Long
+    
+    Dim ws_DB_Judecata As Worksheet
+    Dim DB_Judecata_LastRow As Long
+    Dim DB_Judecata_LastColumn As Long
+    Dim DB_Judecata_Array() As Variant
+    Dim DB_Judecata_sum As Double
+    
+    Dim ws_DB_Furnizare As Worksheet
+    Dim DB_Furnizare_LastRow As Long
+    Dim DB_Furnizare_LastColumn As Long
+    Dim DB_Furnizare_Array() As Variant
+    Dim Temp_DB_Furnizare_Array() As Variant
+    Dim Final_DB_Furnizare_Array() As Variant
+    Dim Filter_Furnizare_Array() As Variant
+    Dim Furnizare_Sum_Count_Array() As Variant
+    Dim Furnizare_sum As Double
+    Dim Furnizare_count As Integer
+    Dim Furnizare_Filter_LastRow As Integer
+    Dim Furnizare_dictClients As Object
+    
+    Dim ws_DB_Altele As Worksheet
+    Dim DB_Altele_LastRow As Long
+    Dim DB_Altele_LastColumn As Long
+    Dim DB_Altele_Array() As Variant
+    Dim Temp_DB_Altele_Array() As Variant
+    Dim Final_DB_Altele_Array() As Variant
+    Dim Filter_Altele_Array() As Variant
+    Dim Altele_Sum_Count_Array() As Variant
+    Dim Altele_sum As Double
+    Dim Altele_count As Integer
+    Dim Altele_Filter_LastRow As Integer
+    Dim Altele_dictClients As Object
+    
+    Dim ws_DB_Distributie As Worksheet
+    Dim DB_Distributie_LastRow As Long
+    Dim DB_Distributie_LastColumn As Long
+    Dim DB_Distributie_Array() As Variant
+    Dim Temp_DB_Distributie_Array() As Variant
+    Dim Final_DB_Distributie_Array() As Variant
+    Dim Filter_Distributie_Array() As Variant
+    Dim Distributie_Sum_Count_Array() As Variant
+    Dim Distributie_sum As Double
+    Dim Distributie_count As Integer
+    Dim Distributie_Filter_LastRow As Integer
+    Dim Distributie_dictClients As Object
+    
+    Dim ws_DB_Incerti As Worksheet
+    Dim DB_Incerti_LastRow As Long
+    Dim DB_Incerti_LastColumn As Long
+    Dim DB_Incerti_Array() As Variant
+    Dim Temp_DB_Incerti_Array() As Variant
+    Dim Final_DB_Incerti_Array() As Variant
+    Dim Filter_Incerti_Array() As Variant
+    Dim Incerti_Sum_Count_Array() As Variant
+    Dim Incerti_sum As Double
+    Dim Incerti_count As Integer
+    Dim Incerti_Filter_LastRow As Integer
+    Dim Incerti_dictClients As Object
+    
+    Dim ws_DB_Penalitati As Worksheet
+    Dim DB_Penalitati_LastRow As Long
+    Dim DB_Penalitati_LastColumn As Long
+    Dim DB_Penalitati_Array() As Variant
+    Dim Temp_DB_Penalitati_Array() As Variant
+    Dim Final_DB_Penalitati_Array() As Variant
+    Dim Filter_Penalitati_Array() As Variant
+    Dim Penalitati_Sum_Count_Array() As Variant
+    Dim Penalitati_sum As Double
+    Dim Penalitati_count As Integer
+    Dim Penalitati_Filter_LastRow As Integer
+    Dim Penalitati_dictClients As Object
+    
+    Dim TodayDate As Date
+    Dim currentYear As Integer
+    Dim Found As Boolean
+    
+    Dim k_furnizare As Long, k_Altele As Long, k_Distributie As Long, k_Incerti As Long, k_Penalitati As Long
+    Dim i As Long, j As Long, k As Long, L As Long
+    Dim VerifDate As Variant
+    Dim OldValG() As Variant
+    Dim NewValG() As Variant
+    Dim codClient As String
+    
+    TodayDate = Format(Date, "DD/MM/YYYY")
+    currentYear = Year(Date)
+    total_Index = 0
+    query1_Index = 0
+    
+    ' Define new and old values for G
+    OldValG = Array("Altele", "Clienti incerti", "Distributie gaze", "Factura Penalitate", "FURNIZARE GAZ", "Furnizare gaze ag eligibili", "Furnizare gaze part eligibili", "Furnizare gaze part reglement")
+    NewValG = Array("Altele", "Clienti incerti", "Distributie", "Factura Penalitate", "Furnizare", "Furnizare", "Furnizare", "Furnizare")
+    
+    ' Optimize performance
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
+
+    ' Open the file selection dialog
+    FilePath = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx", , "Select an Excel file")
+    If FilePath = "False" Then
+        MsgBox "No Excel file was selected.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Open the selected Excel file
+    On Error Resume Next
+    Set wb_Import = Workbooks.Open(FilePath)
+    If Err.Number <> 0 Then
+        MsgBox "Error opening the Excel file.", vbCritical
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    ' Define the source and destination sheets
+    Set ws_Import = wb_Import.Sheets(1)
+    Set ws_Total = ThisWorkbook.Sheets("Total")
+    Set ws_Query_1 = ThisWorkbook.Sheets("Query 1 - Eroare Data")
+    Set ws_DB_Judecata = ThisWorkbook.Sheets("DB - La judecata")
+    Set ws_DB_Furnizare = ThisWorkbook.Sheets("DB - Furnizare")
+    Set ws_DB_Altele = ThisWorkbook.Sheets("DB - Altele")
+    Set ws_DB_Distributie = ThisWorkbook.Sheets("DB - Distributie")
+    Set ws_DB_Incerti = ThisWorkbook.Sheets("DB - Clienti incerti")
+    Set ws_DB_Penalitati = ThisWorkbook.Sheets("DB - Factura Penalitate")
+    
+    ' Determine the last row and last column
+    Import_LastRow = ws_Import.Cells(ws_Import.Rows.count, 1).End(xlUp).Row
+    Import_LastColumn = ws_Import.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    If ws_Total.Cells(ws_Total.Rows.count, 1).End(xlUp).Row > 2 Then
+        Total_LastRow = ws_Total.Cells(ws_Total.Rows.count, 1).End(xlUp).Row
+    Else
+        Total_LastRow = 2
+    End If
+    If ws_Query_1.Cells(ws_Query_1.Rows.count, 1).End(xlUp).Row > 2 Then
+        Query_1_LastRow = ws_Query_1.Cells(ws_Query_1.Rows.count, 1).End(xlUp).Row
+    Else
+        Query_1_LastRow = 2
+    End If
+    
+    DB_Judecata_LastRow = ws_DB_Judecata.Cells(ws_DB_Judecata.Rows.count, 1).End(xlUp).Row
+    DB_Judecata_LastColumn = ws_DB_Judecata.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    DB_Furnizare_LastRow = ws_DB_Furnizare.Cells(ws_DB_Furnizare.Rows.count, 1).End(xlUp).Row
+    DB_Furnizare_LastColumn = ws_DB_Furnizare.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    DB_Altele_LastRow = ws_DB_Altele.Cells(ws_DB_Altele.Rows.count, 1).End(xlUp).Row
+    DB_Altele_LastColumn = ws_DB_Altele.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    DB_Distributie_LastRow = ws_DB_Distributie.Cells(ws_DB_Distributie.Rows.count, 1).End(xlUp).Row
+    DB_Distributie_LastColumn = ws_DB_Distributie.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    DB_Incerti_LastRow = ws_DB_Incerti.Cells(ws_DB_Incerti.Rows.count, 1).End(xlUp).Row
+    DB_Incerti_LastColumn = ws_DB_Incerti.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    DB_Penalitati_LastRow = ws_DB_Penalitati.Cells(ws_DB_Penalitati.Rows.count, 1).End(xlUp).Row
+    DB_Penalitati_LastColumn = ws_DB_Penalitati.Cells(1, Columns.count).End(xlToLeft).Column
+    
+    
+    ' Load data into an array for faster processing
+    Import_Array = ws_Import.Range(ws_Import.Cells(1, 1), ws_Import.Cells(Import_LastRow, Import_LastColumn)).Value
+    DB_Judecata_Array = ws_DB_Judecata.Range(ws_DB_Judecata.Cells(1, 1), ws_DB_Judecata.Cells(DB_Judecata_LastRow, DB_Judecata_LastColumn + 1)).Value
+    
+    DB_Furnizare_Array = ws_DB_Furnizare.Range(ws_DB_Furnizare.Cells(1, 1), ws_DB_Furnizare.Cells(DB_Furnizare_LastRow, DB_Furnizare_LastColumn + 1)).Value
+    ReDim Filter_Furnizare_Array(1 To Import_LastRow, 1 To Import_LastColumn + 1)
+    Temp_DB_Furnizare_Array = ws_DB_Furnizare.Range(ws_DB_Furnizare.Cells(1, 1), ws_DB_Furnizare.Cells(Import_LastRow + DB_Furnizare_LastRow, DB_Furnizare_LastColumn + 1)).Value
+    
+    DB_Altele_Array = ws_DB_Altele.Range(ws_DB_Altele.Cells(1, 1), ws_DB_Altele.Cells(DB_Altele_LastRow, DB_Altele_LastColumn + 1)).Value
+    ReDim Filter_Altele_Array(1 To Import_LastRow, 1 To Import_LastColumn + 1)
+    Temp_DB_Altele_Array = ws_DB_Altele.Range(ws_DB_Altele.Cells(1, 1), ws_DB_Altele.Cells(Import_LastRow + DB_Altele_LastRow, DB_Altele_LastColumn + 1)).Value
+    
+    DB_Distributie_Array = ws_DB_Distributie.Range(ws_DB_Distributie.Cells(1, 1), ws_DB_Distributie.Cells(DB_Distributie_LastRow, DB_Distributie_LastColumn + 1)).Value
+    ReDim Filter_Distributie_Array(1 To Import_LastRow, 1 To Import_LastColumn + 1)
+    Temp_DB_Distributie_Array = ws_DB_Distributie.Range(ws_DB_Distributie.Cells(1, 1), ws_DB_Distributie.Cells(Import_LastRow + DB_Distributie_LastRow, DB_Distributie_LastColumn + 1)).Value
+    
+    DB_Incerti_Array = ws_DB_Incerti.Range(ws_DB_Incerti.Cells(1, 1), ws_DB_Incerti.Cells(DB_Incerti_LastRow, DB_Incerti_LastColumn + 1)).Value
+    ReDim Filter_Incerti_Array(1 To Import_LastRow, 1 To Import_LastColumn + 1)
+    Temp_DB_Incerti_Array = ws_DB_Incerti.Range(ws_DB_Incerti.Cells(1, 1), ws_DB_Incerti.Cells(Import_LastRow + DB_Incerti_LastRow, DB_Incerti_LastColumn + 1)).Value
+    
+    DB_Penalitati_Array = ws_DB_Penalitati.Range(ws_DB_Penalitati.Cells(1, 1), ws_DB_Penalitati.Cells(DB_Penalitati_LastRow, DB_Penalitati_LastColumn + 1)).Value
+    ReDim Filter_Penalitati_Array(1 To Import_LastRow, 1 To Import_LastColumn + 1)
+    Temp_DB_Penalitati_Array = ws_DB_Penalitati.Range(ws_DB_Penalitati.Cells(1, 1), ws_DB_Penalitati.Cells(Import_LastRow + DB_Penalitati_LastRow, DB_Penalitati_LastColumn + 1)).Value
+    
+    
+    ' Initialize arrays for Total_Array and Query1_Array
+    ReDim Total_Array(1 To Import_LastRow + Total_LastRow, 1 To Import_LastColumn)
+    ReDim Query1_Array(1 To Import_LastRow + Query_1_LastRow, 1 To Import_LastColumn)
+    
+    ' Process inport to remove "|"
+    For i = 1 To Import_LastRow
+        VerifDate = Replace(Import_Array(i, 4), "|", "")
+        On Error Resume Next
+        If Year(CDate(VerifDate)) < 2000 Or Year(CDate(VerifDate)) > currentYear Then
+            ' Process data for ws_Query_1
+            query1_Index = query1_Index + 1
+            For j = 1 To Import_LastColumn
+                If j = 4 Then
+                    Query1_Array(query1_Index, j) = CDate(Replace(Import_Array(i, j), "|", ""))
+                Else
+                    If j = 7 Then
+                        For k = LBound(OldValG) To UBound(OldValG)
+                            If Replace(Import_Array(i, j), "|", "") = OldValG(k) Then
+                                Query1_Array(query1_Index, j) = NewValG(k)
+                                Exit For
+                            End If
+                        Next k
+                    Else
+                        If j = 2 Then
+                            Query1_Array(query1_Index, j) = Replace(Replace(Import_Array(i, j), "|", ""), "  ", " ")
+                        Else
+                            Query1_Array(query1_Index, j) = Replace(Import_Array(i, j), "|", "")
+                        End If
+                    End If
+                End If
+            Next j
+        Else
+        ' Process data for wsTotal
+            total_Index = total_Index + 1
+            For j = 1 To Import_LastColumn
+                If j = 4 Then
+                    Total_Array(total_Index, j) = CDate(Replace(Import_Array(i, j), "|", ""))
+                Else
+                    If j = 7 Then
+                        For k = LBound(OldValG) To UBound(OldValG)
+                            If Replace(Import_Array(i, j), "|", "") = OldValG(k) Then
+                                Total_Array(total_Index, j) = NewValG(k)
+                                Exit For
+                            End If
+                        Next k
+                    Else
+                        If j = 2 Then
+                            Total_Array(total_Index, j) = Replace(Replace(Import_Array(i, j), "|", ""), "  ", " ")
+                        Else
+                            Total_Array(total_Index, j) = Replace(Import_Array(i, j), "|", "")
+                        End If
+                    End If
+                End If
+            Next j
+        End If
+        On Error GoTo 0
+    Next i
+    
+    Total_LastRow = total_Index
+    Query_1_LastRow = query1_Index
+    ' Optionally, close the imported workbook if no longer needed
+    wb_Import.Close SaveChanges:=False
+    
+    ' set the last header for the DB_Judecata_Array with Today Date
+    DB_Judecata_Array(1, DB_Judecata_LastColumn + 1) = TodayDate
+    
+    ' Loop through the DB_Judecata_Array and update column 3 with the sum
+    For i = 2 To DB_Judecata_LastRow
+        codClient = DB_Judecata_Array(i, 1)
+        DB_Judecata_sum = 0
+        
+        ' Find matching cod_client in Total_Array and sum the values
+        For j = 1 To Total_LastRow
+            If codClient = CStr(Total_Array(j, 1)) Then
+                DB_Judecata_sum = DB_Judecata_sum + CDbl(Total_Array(j, 5))
+            End If
+        Next j
+        
+        ' Update DB_Judecata_Array last column  with the sum if a match is found
+        DB_Judecata_Array(i, DB_Judecata_LastColumn + 1) = DB_Judecata_sum
+    Next i
+    
+    ' Extract data from Total_Array where "Furnizare", "Altele", "Distributie", "Clienti incerti", "Factura Penalitate"
+    k_furnizare = 0
+    k_Altele = 0
+    k_Distributie = 0
+    k_Incerti = 0
+    k_Penalitati = 0
+    For i = 1 To Total_LastRow
+        'FURNIZARE
+        If Total_Array(i, 7) = "Furnizare" Then
+            Found = False
+            For j = 2 To DB_Judecata_LastRow
+                If CStr(Total_Array(i, 1)) = CStr(DB_Judecata_Array(j, 1)) Then
+                    Found = True
+                    Exit For
+                End If
+            Next j
+            If Found = False Then
+                k_furnizare = k_furnizare + 1
+                For L = 1 To Import_LastColumn
+                    Filter_Furnizare_Array(k_furnizare, L) = Total_Array(i, L)
+                Next L
+                Filter_Furnizare_Array(k_furnizare, Import_LastColumn + 1) = False
+            End If
+        End If
+        'ALTELE
+        If Total_Array(i, 7) = "Altele" Then
+            Found = False
+            For j = 2 To DB_Judecata_LastRow
+                If CStr(Total_Array(i, 1)) = CStr(DB_Judecata_Array(j, 1)) Then
+                    Found = True
+                    Exit For
+                End If
+            Next j
+            If Found = False Then
+                k_Altele = k_Altele + 1
+                For L = 1 To Import_LastColumn
+                    Filter_Altele_Array(k_Altele, L) = Total_Array(i, L)
+                Next L
+                Filter_Altele_Array(k_Altele, Import_LastColumn + 1) = False
+            End If
+        End If
+        'DISTRIBUTIE
+        If Total_Array(i, 7) = "Distributie" Then
+            Found = False
+            For j = 2 To DB_Judecata_LastRow
+                If CStr(Total_Array(i, 1)) = CStr(DB_Judecata_Array(j, 1)) Then
+                    Found = True
+                    Exit For
+                End If
+            Next j
+            If Found = False Then
+                k_Distributie = k_Distributie + 1
+                For L = 1 To Import_LastColumn
+                    Filter_Distributie_Array(k_Distributie, L) = Total_Array(i, L)
+                Next L
+                Filter_Distributie_Array(k_Distributie, Import_LastColumn + 1) = False
+            End If
+        End If
+        'CLIENTI INCERTI
+        If Total_Array(i, 7) = "Clienti incerti" Then
+            Found = False
+            For j = 2 To DB_Judecata_LastRow
+                If CStr(Total_Array(i, 1)) = CStr(DB_Judecata_Array(j, 1)) Then
+                    Found = True
+                    Exit For
+                End If
+            Next j
+            If Found = False Then
+                k_Incerti = k_Incerti + 1
+                For L = 1 To Import_LastColumn
+                    Filter_Incerti_Array(k_Incerti, L) = Total_Array(i, L)
+                Next L
+                Filter_Incerti_Array(k_Incerti, Import_LastColumn + 1) = False
+            End If
+        End If
+        'FACTURA PENALITATE
+        If Total_Array(i, 7) = "Factura Penalitate" Then
+            Found = False
+            For j = 2 To DB_Judecata_LastRow
+                If CStr(Total_Array(i, 1)) = CStr(DB_Judecata_Array(j, 1)) Then
+                    Found = True
+                    Exit For
+                End If
+            Next j
+            If Found = False Then
+                k_Penalitati = k_Penalitati + 1
+                For L = 1 To Import_LastColumn
+                    Filter_Penalitati_Array(k_Penalitati, L) = Total_Array(i, L)
+                Next L
+                Filter_Penalitati_Array(k_Penalitati, Import_LastColumn + 1) = False
+            End If
+        End If
+    Next i
+    
+    Furnizare_Filter_LastRow = k_furnizare
+    ReDim Furnizare_Sum_Count_Array(1 To Furnizare_Filter_LastRow + DB_Furnizare_LastRow, 1 To 4)
+    Set Furnizare_dictClients = CreateObject("Scripting.Dictionary")
+    
+    Altele_Filter_LastRow = k_Altele
+    ReDim Altele_Sum_Count_Array(1 To Altele_Filter_LastRow + DB_Altele_LastRow, 1 To 4)
+    Set Altele_dictClients = CreateObject("Scripting.Dictionary")
+    
+    Distributie_Filter_LastRow = k_Distributie
+    ReDim Distributie_Sum_Count_Array(1 To Distributie_Filter_LastRow + DB_Distributie_LastRow, 1 To 4)
+    Set Distributie_dictClients = CreateObject("Scripting.Dictionary")
+    
+
+    Incerti_Filter_LastRow = k_Incerti
+    ReDim Incerti_Sum_Count_Array(1 To Incerti_Filter_LastRow + DB_Incerti_LastRow, 1 To 4)
+    Set Incerti_dictClients = CreateObject("Scripting.Dictionary")
+    
+    Penalitati_Filter_LastRow = k_Penalitati
+    ReDim Penalitati_Sum_Count_Array(1 To Penalitati_Filter_LastRow + DB_Penalitati_LastRow, 1 To 4)
+    Set Penalitati_dictClients = CreateObject("Scripting.Dictionary")
+        
+    ' Loop through the Filter_Furnizare_Array
+    k = 0
+    For i = 1 To Furnizare_Filter_LastRow
+        codClient = Filter_Furnizare_Array(i, 1)
+        Furnizare_sum = 0
+        Furnizare_count = 0
+        ' Find matching cod_client in Filter_Furnizare_Array
+        For j = 1 To Furnizare_Filter_LastRow
+            If codClient = CStr(Filter_Furnizare_Array(j, 1)) Then
+                If Filter_Furnizare_Array(j, Import_LastColumn + 1) = False Then
+                    Furnizare_sum = Furnizare_sum + CDbl(Filter_Furnizare_Array(j, 5))
+                    Furnizare_count = Furnizare_count + 1
+                    Filter_Furnizare_Array(j, Import_LastColumn + 1) = True
+                End If
+            End If
+        Next j
+        If Not Furnizare_dictClients.exists(codClient) Then
+            k = k + 1
+            ' Update Furnizare_Sum_Count_Array with cod, name, sum and count
+            Furnizare_Sum_Count_Array(k, 1) = Filter_Furnizare_Array(i, 1)
+            Furnizare_Sum_Count_Array(k, 2) = Filter_Furnizare_Array(i, 2)
+            Furnizare_Sum_Count_Array(k, 3) = Furnizare_sum
+            Furnizare_Sum_Count_Array(k, 4) = Furnizare_count
+            
+            ' Add in dictionary the new cod client
+            Furnizare_dictClients.Add codClient, True
+        End If
+    Next i
+    
+    Temp_DB_Furnizare_Array(1, DB_Furnizare_LastColumn + 1) = TodayDate
+    New_DB_Furnizare_LastRow = DB_Furnizare_LastRow
+    
+    For i = 1 To k
+        codClient = Furnizare_Sum_Count_Array(i, 1)
+        Found = False
+        For j = 2 To DB_Furnizare_LastRow
+            If codClient = CStr(Temp_DB_Furnizare_Array(j, 1)) Then
+                Found = True
+                Exit For
+            End If
+        Next j
+        If Found = True Then
+            Temp_DB_Furnizare_Array(j, DB_Furnizare_LastColumn + 1) = Furnizare_Sum_Count_Array(i, 3)
+            
+        Else
+            If Furnizare_Sum_Count_Array(i, 3) > 500 Or Furnizare_Sum_Count_Array(i, 4) > 4 Then
+                    New_DB_Furnizare_LastRow = New_DB_Furnizare_LastRow + 1
+                    Temp_DB_Furnizare_Array(New_DB_Furnizare_LastRow, 1) = Furnizare_Sum_Count_Array(i, 1)
+                    Temp_DB_Furnizare_Array(New_DB_Furnizare_LastRow, 2) = Furnizare_Sum_Count_Array(i, 2)
+                    Temp_DB_Furnizare_Array(New_DB_Furnizare_LastRow, DB_Furnizare_LastColumn + 1) = Furnizare_Sum_Count_Array(i, 3)
+            End If
+        End If
+    Next i
+    
+    ReDim Final_DB_Furnizare_Array(1 To New_DB_Furnizare_LastRow, 1 To DB_Furnizare_LastColumn + 1)
+    For i = 1 To DB_Furnizare_LastColumn + 1
+        Final_DB_Furnizare_Array(1, i) = Temp_DB_Furnizare_Array(1, i)
+    Next i
+        
+    k = 1
+    For i = 2 To New_DB_Furnizare_LastRow
+        If Not IsEmpty(Temp_DB_Furnizare_Array(i, DB_Furnizare_LastColumn + 1)) Then
+            k = k + 1
+            For j = 1 To DB_Furnizare_LastColumn + 1
+                Final_DB_Furnizare_Array(k, j) = Temp_DB_Furnizare_Array(i, j)
+            Next j
+        End If
+    Next i
+    
+        
+    
+    
+    ' Loop through the Filter_Altele_Array
+    k = 0
+    For i = 1 To Altele_Filter_LastRow
+        codClient = Filter_Altele_Array(i, 1)
+        Altele_sum = 0
+        Altele_count = 0
+        ' Find matching cod_client in Filter_Altele_Array
+        For j = 1 To Altele_Filter_LastRow
+            If codClient = CStr(Filter_Altele_Array(j, 1)) Then
+                If Filter_Altele_Array(j, Import_LastColumn + 1) = False Then
+                    Altele_sum = Altele_sum + CDbl(Filter_Altele_Array(j, 5))
+                    Altele_count = Altele_count + 1
+                    Filter_Altele_Array(j, Import_LastColumn + 1) = True
+                End If
+            End If
+        Next j
+        If Not Altele_dictClients.exists(codClient) Then
+            k = k + 1
+            ' Update Altele_Sum_Count_Array with cod, name, sum and count
+            Altele_Sum_Count_Array(k, 1) = Filter_Altele_Array(i, 1)
+            Altele_Sum_Count_Array(k, 2) = Filter_Altele_Array(i, 2)
+            Altele_Sum_Count_Array(k, 3) = Altele_sum
+            Altele_Sum_Count_Array(k, 4) = Altele_count
+            
+            ' Add in dictionary the new cod client
+            Altele_dictClients.Add codClient, True
+        End If
+    Next i
+    
+    Temp_DB_Altele_Array(1, DB_Altele_LastColumn + 1) = TodayDate
+    New_DB_Altele_LastRow = DB_Altele_LastRow
+    
+    For i = 1 To k
+        codClient = Altele_Sum_Count_Array(i, 1)
+        Found = False
+        For j = 2 To DB_Altele_LastRow
+            If codClient = CStr(Temp_DB_Altele_Array(j, 1)) Then
+                Found = True
+                Exit For
+            End If
+        Next j
+        If Found = True Then
+            Temp_DB_Altele_Array(j, DB_Altele_LastColumn + 1) = Altele_Sum_Count_Array(i, 3)
+            
+        Else
+            New_DB_Altele_LastRow = New_DB_Altele_LastRow + 1
+            Temp_DB_Altele_Array(New_DB_Altele_LastRow, 1) = Altele_Sum_Count_Array(i, 1)
+            Temp_DB_Altele_Array(New_DB_Altele_LastRow, 2) = Altele_Sum_Count_Array(i, 2)
+            Temp_DB_Altele_Array(New_DB_Altele_LastRow, DB_Altele_LastColumn + 1) = Altele_Sum_Count_Array(i, 3)
+            
+        End If
+    Next i
+    
+    ReDim Final_DB_Altele_Array(1 To New_DB_Altele_LastRow, 1 To DB_Altele_LastColumn + 1)
+    For i = 1 To DB_Altele_LastColumn + 1
+        Final_DB_Altele_Array(1, i) = Temp_DB_Altele_Array(1, i)
+    Next i
+        
+    k = 1
+    For i = 2 To New_DB_Altele_LastRow
+        If Not IsEmpty(Temp_DB_Altele_Array(i, DB_Altele_LastColumn + 1)) Then
+            k = k + 1
+            For j = 1 To DB_Altele_LastColumn + 1
+                Final_DB_Altele_Array(k, j) = Temp_DB_Altele_Array(i, j)
+            Next j
+        End If
+    Next i
+    
+    ' Loop through the Filter_Distributie_Array
+    k = 0
+    For i = 1 To Distributie_Filter_LastRow
+        codClient = Filter_Distributie_Array(i, 1)
+        Distributie_sum = 0
+        Distributie_count = 0
+        ' Find matching cod_client in Filter_Distributie_Array
+        For j = 1 To Distributie_Filter_LastRow
+            If codClient = CStr(Filter_Distributie_Array(j, 1)) Then
+                If Filter_Distributie_Array(j, Import_LastColumn + 1) = False Then
+                    Distributie_sum = Distributie_sum + CDbl(Filter_Distributie_Array(j, 5))
+                    Distributie_count = Distributie_count + 1
+                    Filter_Distributie_Array(j, Import_LastColumn + 1) = True
+                End If
+            End If
+        Next j
+        If Not Distributie_dictClients.exists(codClient) Then
+            k = k + 1
+            ' Update Distributie_Sum_Count_Array with cod, name, sum and count
+            Distributie_Sum_Count_Array(k, 1) = Filter_Distributie_Array(i, 1)
+            Distributie_Sum_Count_Array(k, 2) = Filter_Distributie_Array(i, 2)
+            Distributie_Sum_Count_Array(k, 3) = Distributie_sum
+            Distributie_Sum_Count_Array(k, 4) = Distributie_count
+            
+            ' Add in dictionary the new cod client
+            Distributie_dictClients.Add codClient, True
+        End If
+    Next i
+    
+    Temp_DB_Distributie_Array(1, DB_Distributie_LastColumn + 1) = TodayDate
+    New_DB_Distributie_LastRow = DB_Distributie_LastRow
+    
+    For i = 1 To k
+        codClient = Distributie_Sum_Count_Array(i, 1)
+        Found = False
+        For j = 2 To DB_Distributie_LastRow
+            If codClient = CStr(Temp_DB_Distributie_Array(j, 1)) Then
+                Found = True
+                Exit For
+            End If
+        Next j
+        If Found = True Then
+            Temp_DB_Distributie_Array(j, DB_Distributie_LastColumn + 1) = Distributie_Sum_Count_Array(i, 3)
+            
+        Else
+            New_DB_Distributie_LastRow = New_DB_Distributie_LastRow + 1
+            Temp_DB_Distributie_Array(New_DB_Distributie_LastRow, 1) = Distributie_Sum_Count_Array(i, 1)
+            Temp_DB_Distributie_Array(New_DB_Distributie_LastRow, 2) = Distributie_Sum_Count_Array(i, 2)
+            Temp_DB_Distributie_Array(New_DB_Distributie_LastRow, DB_Distributie_LastColumn + 1) = Distributie_Sum_Count_Array(i, 3)
+            
+        End If
+    Next i
+    
+    
+    ReDim Final_DB_Distributie_Array(1 To New_DB_Distributie_LastRow, 1 To DB_Distributie_LastColumn + 1)
+    For i = 1 To DB_Distributie_LastColumn + 1
+        Final_DB_Distributie_Array(1, i) = Temp_DB_Distributie_Array(1, i)
+    Next i
+        
+    k = 1
+    For i = 2 To New_DB_Distributie_LastRow
+        If Not IsEmpty(Temp_DB_Distributie_Array(i, DB_Distributie_LastColumn + 1)) Then
+            k = k + 1
+            For j = 1 To DB_Distributie_LastColumn + 1
+                Final_DB_Distributie_Array(k, j) = Temp_DB_Distributie_Array(i, j)
+            Next j
+        End If
+    Next i
+    
+    ' Loop through the Filter_Incerti_Array
+    k = 0
+    For i = 1 To Incerti_Filter_LastRow
+        codClient = Filter_Incerti_Array(i, 1)
+        Incerti_sum = 0
+        Incerti_count = 0
+        ' Find matching cod_client in Filter_Incerti_Array
+        For j = 1 To Incerti_Filter_LastRow
+            If codClient = CStr(Filter_Incerti_Array(j, 1)) Then
+                If Filter_Incerti_Array(j, Import_LastColumn + 1) = False Then
+                    Incerti_sum = Incerti_sum + CDbl(Filter_Incerti_Array(j, 5))
+                    Incerti_count = Incerti_count + 1
+                    Filter_Incerti_Array(j, Import_LastColumn + 1) = True
+                End If
+            End If
+        Next j
+        If Not Incerti_dictClients.exists(codClient) Then
+            k = k + 1
+            ' Update Incerti_Sum_Count_Array with cod, name, sum and count
+            Incerti_Sum_Count_Array(k, 1) = Filter_Incerti_Array(i, 1)
+            Incerti_Sum_Count_Array(k, 2) = Filter_Incerti_Array(i, 2)
+            Incerti_Sum_Count_Array(k, 3) = Incerti_sum
+            Incerti_Sum_Count_Array(k, 4) = Incerti_count
+            
+            ' Add in dictionary the new cod client
+            Incerti_dictClients.Add codClient, True
+        End If
+    Next i
+    
+    Temp_DB_Incerti_Array(1, DB_Incerti_LastColumn + 1) = TodayDate
+    New_DB_Incerti_LastRow = DB_Incerti_LastRow
+    
+    For i = 1 To k
+        codClient = Incerti_Sum_Count_Array(i, 1)
+        Found = False
+        For j = 2 To DB_Incerti_LastRow
+            If codClient = CStr(Temp_DB_Incerti_Array(j, 1)) Then
+                Found = True
+                Exit For
+            End If
+        Next j
+        If Found = True Then
+            Temp_DB_Incerti_Array(j, DB_Incerti_LastColumn + 1) = Incerti_Sum_Count_Array(i, 3)
+            
+        Else
+            New_DB_Incerti_LastRow = New_DB_Incerti_LastRow + 1
+            Temp_DB_Incerti_Array(New_DB_Incerti_LastRow, 1) = Incerti_Sum_Count_Array(i, 1)
+            Temp_DB_Incerti_Array(New_DB_Incerti_LastRow, 2) = Incerti_Sum_Count_Array(i, 2)
+            Temp_DB_Incerti_Array(New_DB_Incerti_LastRow, DB_Incerti_LastColumn + 1) = Incerti_Sum_Count_Array(i, 3)
+            
+        End If
+    Next i
+    
+    ReDim Final_DB_Incerti_Array(1 To New_DB_Incerti_LastRow, 1 To DB_Incerti_LastColumn + 1)
+    For i = 1 To DB_Incerti_LastColumn + 1
+        Final_DB_Incerti_Array(1, i) = Temp_DB_Incerti_Array(1, i)
+    Next i
+        
+    k = 1
+    For i = 2 To New_DB_Incerti_LastRow
+        If Not IsEmpty(Temp_DB_Incerti_Array(i, DB_Incerti_LastColumn + 1)) Then
+            k = k + 1
+            For j = 1 To DB_Incerti_LastColumn + 1
+                Final_DB_Incerti_Array(k, j) = Temp_DB_Incerti_Array(i, j)
+            Next j
+        End If
+    Next i
+    
+    ' Loop through the Filter_Penalitati_Array
+    k = 0
+    For i = 1 To Penalitati_Filter_LastRow
+        codClient = Filter_Penalitati_Array(i, 1)
+        Penalitati_sum = 0
+        Penalitati_count = 0
+        ' Find matching cod_client in Filter_Penalitati_Array
+        For j = 1 To Penalitati_Filter_LastRow
+            If codClient = CStr(Filter_Penalitati_Array(j, 1)) Then
+                If Filter_Penalitati_Array(j, Import_LastColumn + 1) = False Then
+                    Penalitati_sum = Penalitati_sum + CDbl(Filter_Penalitati_Array(j, 5))
+                    Penalitati_count = Penalitati_count + 1
+                    Filter_Penalitati_Array(j, Import_LastColumn + 1) = True
+                End If
+            End If
+        Next j
+        If Not Penalitati_dictClients.exists(codClient) Then
+            k = k + 1
+            ' Update Penalitati_Sum_Count_Array with cod, name, sum and count
+            Penalitati_Sum_Count_Array(k, 1) = Filter_Penalitati_Array(i, 1)
+            Penalitati_Sum_Count_Array(k, 2) = Filter_Penalitati_Array(i, 2)
+            Penalitati_Sum_Count_Array(k, 3) = Penalitati_sum
+            Penalitati_Sum_Count_Array(k, 4) = Penalitati_count
+            
+            ' Add in dictionary the new cod client
+            Penalitati_dictClients.Add codClient, True
+        End If
+    Next i
+    
+    Temp_DB_Penalitati_Array(1, DB_Penalitati_LastColumn + 1) = TodayDate
+    New_DB_Penalitati_LastRow = DB_Penalitati_LastRow
+    
+    For i = 1 To k
+        codClient = Penalitati_Sum_Count_Array(i, 1)
+        Found = False
+        For j = 2 To DB_Penalitati_LastRow
+            If codClient = CStr(Temp_DB_Penalitati_Array(j, 1)) Then
+                Found = True
+                Exit For
+            End If
+        Next j
+        If Found = True Then
+            Temp_DB_Penalitati_Array(j, DB_Penalitati_LastColumn + 1) = Penalitati_Sum_Count_Array(i, 3)
+            
+        Else
+            New_DB_Penalitati_LastRow = New_DB_Penalitati_LastRow + 1
+            Temp_DB_Penalitati_Array(New_DB_Penalitati_LastRow, 1) = Penalitati_Sum_Count_Array(i, 1)
+            Temp_DB_Penalitati_Array(New_DB_Penalitati_LastRow, 2) = Penalitati_Sum_Count_Array(i, 2)
+            Temp_DB_Penalitati_Array(New_DB_Penalitati_LastRow, DB_Penalitati_LastColumn + 1) = Penalitati_Sum_Count_Array(i, 3)
+            
+        End If
+    Next i
+    
+    ReDim Final_DB_Penalitati_Array(1 To New_DB_Penalitati_LastRow, 1 To DB_Penalitati_LastColumn + 1)
+    For i = 1 To DB_Penalitati_LastColumn + 1
+        Final_DB_Penalitati_Array(1, i) = Temp_DB_Penalitati_Array(1, i)
+    Next i
+        
+    k = 1
+    For i = 2 To New_DB_Penalitati_LastRow
+        If Not IsEmpty(Temp_DB_Penalitati_Array(i, DB_Penalitati_LastColumn + 1)) Then
+            k = k + 1
+            For j = 1 To DB_Penalitati_LastColumn + 1
+                Final_DB_Penalitati_Array(k, j) = Temp_DB_Penalitati_Array(i, j)
+            Next j
+        End If
+    Next i
+    
+    ' Write arrays back to the worksheets
+    ws_Total.Cells(2, 1).Resize(Import_LastRow + Total_LastRow, Import_LastColumn).Value = Total_Array
+    
+    ws_Query_1.Cells(2, 1).Resize(Import_LastRow + Query_1_LastRow, Import_LastColumn).Value = Query1_Array
+    
+    ws_DB_Judecata.Cells(1, 1).Resize(DB_Judecata_LastRow, DB_Judecata_LastColumn + 1).Value = DB_Judecata_Array
+    
+    ws_DB_Furnizare.Cells(1, 1).Resize(New_DB_Furnizare_LastRow, DB_Furnizare_LastColumn + 1).Value = Final_DB_Furnizare_Array
+    
+    ws_DB_Altele.Cells(1, 1).Resize(New_DB_Altele_LastRow, DB_Altele_LastColumn + 1).Value = Final_DB_Altele_Array
+    
+    ws_DB_Distributie.Cells(1, 1).Resize(New_DB_Distributie_LastRow, DB_Distributie_LastColumn + 1).Value = Final_DB_Distributie_Array
+    
+    ws_DB_Incerti.Cells(1, 1).Resize(New_DB_Incerti_LastRow, DB_Incerti_LastColumn + 1).Value = Final_DB_Incerti_Array
+    
+    ws_DB_Penalitati.Cells(1, 1).Resize(New_DB_Penalitati_LastRow, DB_Penalitati_LastColumn + 1).Value = Final_DB_Penalitati_Array
+    
+    ' Convert columns from sheets to other formats
+    'ws_Total.Columns("A:A").NumberFormat = "0"
+    ws_Total.Columns("E:E").NumberFormat = "0.00"
+    
+    'ws_Query_1.Columns("A:A").NumberFormat = "0"
+    ws_Query_1.Columns("E:E").NumberFormat = "0.00"
+    
+    
+    ' Restore settings
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.EnableEvents = True
+    
+    MsgBox "Data transfer complete.", vbInformation
+End Sub
+
